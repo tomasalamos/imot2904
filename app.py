@@ -35,57 +35,38 @@ def form():
 def process():
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'data.csv')
     df = pd.read_csv(filepath)
-    
-    # Manejo robusto de fechas
     df['date'] = pd.to_datetime(df['date'], errors='coerce')
-    df = df.dropna(subset=['date'])  # Filtra filas con fechas inválidas
+    df = df.dropna(subset=['date'])
 
-    # Rango real del archivo
-    real_min = df['date'].min()
-    real_max = df['date'].max()
-
-    # Captura fechas del formulario
-    start_str = request.form.get('start_date')
-    end_str = request.form.get('end_date')
     selected_vars = request.form.getlist('variables')
-    negative_vars = request.form.getlist('negative_vars')
+    negative_vars = request.form.getlist('negatives')
+    start_date = pd.to_datetime(request.form.get('start_date'), errors='coerce')
+    end_date = pd.to_datetime(request.form.get('end_date'), errors='coerce')
 
-    # Convierte fechas del formulario
-    try:
-        start_date = pd.to_datetime(start_str, errors='coerce')
-        if pd.isna(start_date) or start_date < real_min:
-            start_date = real_min
-    except:
-        start_date = real_min
+    df = df.sort_values('date')  # Asegura que esté ordenado cronológicamente
+    date_list = df['date'].tolist()
 
-    try:
-        end_date = pd.to_datetime(end_str, errors='coerce')
-        if pd.isna(end_date) or end_date > real_max:
-            end_date = real_max
-    except:
-        end_date = real_max
+    # Buscar la siguiente fecha válida para start_date
+    if start_date not in df['date'].values:
+        start_date = next((d for d in date_list if d > start_date), df['date'].min())
 
-    # Asegura que el rango tenga sentido
-    if start_date >= end_date:
-        start_date = real_min
-        end_date = real_max
+    # Buscar la fecha anterior válida para end_date
+    if end_date not in df['date'].values:
+        reversed_dates = list(reversed(date_list))
+        end_date = next((d for d in reversed_dates if d < end_date), df['date'].max())
 
-    # Filtrado final
     df_filtered = df[(df['date'] >= start_date) & (df['date'] <= end_date)]
 
-    # Guardar outputs
-    filtered_path = os.path.join(app.config['UPLOAD_FOLDER'], 'filtered_data.csv')
-    filtered_vars_path = os.path.join(app.config['UPLOAD_FOLDER'], 'negative_variables.txt')
+    # Guardar resultados
+    df_filtered[selected_vars].to_csv(os.path.join(app.config['UPLOAD_FOLDER'], 'filtered_data.csv'), index=False)
+    with open(os.path.join(app.config['UPLOAD_FOLDER'], 'negative_variables.pkl'), 'wb') as f:
+        pickle.dump(negative_vars, f)
 
-    df_filtered.to_csv(filtered_path, index=False)
-    with open(filtered_vars_path, 'w') as f:
-        f.write('\n'.join(negative_vars))
+    return render_template('results.html', selected_vars=selected_vars,
+                           negative_vars=negative_vars,
+                           start=start_date.strftime('%Y-%m-%d %H:%M:%S'),
+                           end=end_date.strftime('%Y-%m-%d %H:%M:%S'))
 
-    return render_template('result.html', 
-                           filtered_data='filtered_data.csv',
-                           negative_vars='negative_variables.txt',
-                           selected_vars=selected_vars,
-                           date_range=f"{start_date} to {end_date}")
 
 @app.route('/download/<filename>')
 def download_file(filename):
