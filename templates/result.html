@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resultados</title>
+</head>
+<body>
+    <h1>Resultados del análisis</h1>
+    <p><strong>Rango de fechas:</strong> {{ start_date }} - {{ end_date }}</p>
+    <p><strong>Total de registros:</strong> {{ record_count }}</p>
+    <p><strong>Variables de interés:</strong> {{ selected_vars|join(', ') }}</p>
+    <p><strong>Variables con valores negativos:</strong>
+        {% if negative_vars %}
+            {{ negative_vars|join(', ') }}
+        {% else %}
+            Ninguna
+        {% endif %}
+    </p>
+
+    <h3>Descargar archivos:</h3>
+    <ul>
+        <li><a href="{{ url_for('download_file', filename=csv_file) }}">Descargar CSV</a></li>
+        <li><a href="{{ url_for('download_file', filename=txt_file) }}">Descargar TXT</a></li>
+    </ul>
+
+    <br>
+    <a href="/">Volver al inicio</a>
+</body>
+</html>

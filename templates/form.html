@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Seleccionar Parámetros</title>
+</head>
+<body>
+    <h1>Selecciona las variables y fechas</h1>
+    <form action="/process" method="post">
+        <label for="start_date">Fecha de inicio:</label>
+        <input type="datetime-local" name="start_date" min="{{ min_date }}" max="{{ max_date }}" required><br><br>
+
+        <label for="end_date">Fecha de fin:</label>
+        <input type="datetime-local" name="end_date" min="{{ min_date }}" max="{{ max_date }}" required><br><br>
+
+        <h3>Variables de interés:</h3>
+        {% for var in variables %}
+            <input type="checkbox" name="variables" value="{{ var }}"> {{ var }}<br>
+        {% endfor %}
+
+        <h3>Variables que permiten valores negativos:</h3>
+        {% for var in variables %}
+            <input type="checkbox" name="negative_variables" value="{{ var }}"> {{ var }}<br>
+        {% endfor %}
+
+        <br>
+        <button type="submit">Procesar</button>
+    </form>
+</body>
+</html>
