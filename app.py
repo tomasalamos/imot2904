@@ -23,7 +23,8 @@ def form():
     file.save(filepath)
 
     df = pd.read_csv(filepath)
-    df['date'] = pd.to_datetime(df['date'])
+    df['date'] = pd.to_datetime(df['date'], errors='coerce')
+    df = df.dropna(subset=['date'])
     numeric_columns = df.select_dtypes(include=['float64', 'int64']).columns.tolist()
     min_date = df['date'].min().strftime('%Y-%m-%dT%H:%M:%S')
     max_date = df['date'].max().strftime('%Y-%m-%dT%H:%M:%S')
@@ -34,7 +35,8 @@ def form():
 def process():
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'data.csv')
     df = pd.read_csv(filepath)
-    df['date'] = pd.to_datetime(df['date'])
+    df['date'] = pd.to_datetime(df['date'], errors='coerce')
+    df = df.dropna(subset=['date'])
 
     selected_vars = request.form.getlist('variables')
     negative_vars = request.form.getlist('negative_variables')
