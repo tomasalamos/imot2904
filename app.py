@@ -35,50 +35,57 @@ def form():
 def process():
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'data.csv')
     df = pd.read_csv(filepath)
+    
+    # Manejo robusto de fechas
     df['date'] = pd.to_datetime(df['date'], errors='coerce')
-    df = df.dropna(subset=['date'])
+    df = df.dropna(subset=['date'])  # Filtra filas con fechas inválidas
 
+    # Rango real del archivo
+    real_min = df['date'].min()
+    real_max = df['date'].max()
+
+    # Captura fechas del formulario
+    start_str = request.form.get('start_date')
+    end_str = request.form.get('end_date')
     selected_vars = request.form.getlist('variables')
-    negative_vars = request.form.getlist('negative_variables')
-    start_date = request.form['start_date']
-    end_date = request.form['end_date']
+    negative_vars = request.form.getlist('negative_vars')
 
-    mode_frequency = df['date'].diff().dt.total_seconds().mode().iloc[0]
-    min_available_date = df['date'].min() + pd.Timedelta(seconds=mode_frequency)
+    # Convierte fechas del formulario
+    try:
+        start_date = pd.to_datetime(start_str, errors='coerce')
+        if pd.isna(start_date) or start_date < real_min:
+            start_date = real_min
+    except:
+        start_date = real_min
 
-    start_date_dt = datetime.strptime(start_date, '%Y-%m-%dT%H:%M:%S')
-    end_date_dt = datetime.strptime(end_date, '%Y-%m-%dT%H:%M:%S')
+    try:
+        end_date = pd.to_datetime(end_str, errors='coerce')
+        if pd.isna(end_date) or end_date > real_max:
+            end_date = real_max
+    except:
+        end_date = real_max
 
-    if start_date_dt < min_available_date or end_date_dt > df['date'].max() or end_date_dt < start_date_dt:
-        return "Invalid date range selected."
+    # Asegura que el rango tenga sentido
+    if start_date >= end_date:
+        start_date = real_min
+        end_date = real_max
 
-    start_date_idx = df[df['date'] == start_date_dt].index[0]
-    end_date_idx = df[df['date'] == end_date_dt].index[0]
+    # Filtrado final
+    df_filtered = df[(df['date'] >= start_date) & (df['date'] <= end_date)]
 
-    if start_date_idx > 0 and (df['date'].iloc[start_date_idx] - df['date'].iloc[start_date_idx - 1]).total_seconds() == mode_frequency:
-        start_idx = start_date_idx - 1
-    else:
-        start_idx = start_date_idx
+    # Guardar outputs
+    filtered_path = os.path.join(app.config['UPLOAD_FOLDER'], 'filtered_data.csv')
+    filtered_vars_path = os.path.join(app.config['UPLOAD_FOLDER'], 'negative_variables.txt')
 
-    filtered_df = df.iloc[start_idx:end_date_idx + 1][['date'] + selected_vars]
-    filtered_df['date'] = filtered_df['date'].dt.strftime("%Y-%m-%d %H:%M:%S")
+    df_filtered.to_csv(filtered_path, index=False)
+    with open(filtered_vars_path, 'w') as f:
+        f.write('\n'.join(negative_vars))
 
-    output_csv = os.path.join(app.config['UPLOAD_FOLDER'], 'filtered_data.csv')
-    output_txt = os.path.join(app.config['UPLOAD_FOLDER'], 'negative_variables.txt')
-    filtered_df.to_csv(output_csv, index=False)
-
-    with open(output_txt, 'w') as f:
-        for var in negative_vars:
-            f.write(f"{var}\n")
-
-    return render_template('results.html',
-                           csv_file='filtered_data.csv',
-                           txt_file='negative_variables.txt',
-                           record_count=len(filtered_df),
+    return render_template('result.html', 
+                           filtered_data='filtered_data.csv',
+                           negative_vars='negative_variables.txt',
                            selected_vars=selected_vars,
-                           negative_vars=negative_vars,
-                           start_date=start_date_dt,
-                           end_date=end_date_dt)
+                           date_range=f"{start_date} to {end_date}")
 
 @app.route('/download/<filename>')
 def download_file(filename):
