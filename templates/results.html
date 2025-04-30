@@ -1,40 +1,55 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Results</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultados de Procesamiento</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 <body>
-    <h1>Processing Complete</h1>
+    <div class="container">
+        <h1 class="mt-5">Resultados del Procesamiento de Datos</h1>
+        <div class="alert alert-success mt-4">
+            <h4 class="alert-heading">Procesamiento Exitoso</h4>
+            <p>El archivo de datos ha sido procesado y corregido correctamente. Aquí están los detalles:</p>
+            <ul>
+                <li><strong>Variables seleccionadas:</strong> 
+                    <ul>
+                        {% for var in selected_vars %}
+                            <li>{{ var }}</li>
+                        {% endfor %}
+                    </ul>
+                </li>
+                <li><strong>Variables negativas:</strong> 
+                    <ul>
+                        {% for var in negative_vars %}
+                            <li>{{ var }}</li>
+                        {% endfor %}
+                    </ul>
+                </li>
+                <li><strong>Rango de fechas:</strong> {{ start }} - {{ end }}</li>
+            </ul>
+        </div>
 
-    <p><strong>Start date:</strong> {{ start }}</p>
-    <p><strong>End date:</strong> {{ end }}</p>
+        <div class="alert alert-info mt-4">
+            <h4 class="alert-heading">Archivos Generados</h4>
+            <p>Los siguientes archivos han sido generados y están listos para descargar:</p>
+            <ul>
+                <li><a href="{{ url_for('download_file', filename='filtered_data.csv') }}" class="btn btn-primary">Descargar Datos Filtrados</a></li>
+                <li><a href="{{ url_for('download_file', filename='complete_data.csv') }}" class="btn btn-primary">Descargar Datos Completos</a></li>
+                <li><a href="{{ url_for('download_file', filename='missing_dates.csv') }}" class="btn btn-primary">Descargar Fechas Faltantes</a></li>
+            </ul>
+        </div>
+        
+        <div class="mt-4">
+            <a href="/" class="btn btn-secondary">Volver al Inicio</a>
+        </div>
+    </div>
 
-    <h2>Selected Variables:</h2>
-    <ul>
-        {% for var in selected_vars %}
-        <li>{{ var }}</li>
-        {% endfor %}
-    </ul>
-
-    <h2>Negative Variables:</h2>
-    {% if negative_vars %}
-    <ul>
-        {% for var in negative_vars %}
-        <li>{{ var }}</li>
-        {% endfor %}
-    </ul>
-    {% else %}
-    <p>No negative variables selected.</p>
-    {% endif %}
-
-    <h2>Downloads:</h2>
-    <ul>
-        <li><a href="{{ url_for('download_file', filename='filtered_data.csv') }}">Download filtered_data.csv</a></li>
-        <li><a href="{{ url_for('download_file', filename='negative_variables.txt') }}">Download negative_variables.txt</a></li>
-    </ul>
-
-    <p><a href="{{ url_for('index') }}">Upload another file</a></p>
+    <!-- Optional JavaScript; choose one of the two! -->
+    <!-- Option 1: Bootstrap Bundle with Popper -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>
-
