@@ -58,7 +58,6 @@ def process():
         pickle.dump(negative_vars, f)
 
     complete_data, missing_dates = complete_missing_data(df_to_save, selected_vars)
-
     complete_data['date'] = pd.to_datetime(complete_data['date']).dt.strftime('%Y-%m-%d %H:%M:%S')
     complete_data.to_csv(os.path.join(app.config['UPLOAD_FOLDER'], 'complete_data.csv'), index=False)
 
@@ -66,7 +65,6 @@ def process():
         for date in missing_dates:
             f.write(f"{date}\n")
 
-    # TERCERA ETAPA: DETECCIÓN Y CORRECCIÓN DE FALLAS
     corrected_df, detected_failures = detect_and_correct_failures(complete_data.copy(), selected_vars, negative_vars)
     corrected_df.to_csv(os.path.join(app.config['UPLOAD_FOLDER'], 'corrected_data.csv'), index=False)
 
@@ -84,16 +82,10 @@ def process():
 def complete_missing_data(df_filtered, measurement_columns):
     df_filtered = df_filtered.copy()
     df_filtered['date'] = pd.to_datetime(df_filtered['date'])
-
-    inferred_freq = pd.infer_freq(df_filtered['date'])
-    if inferred_freq is None:
-        inferred_freq = '10s'
-
+    inferred_freq = pd.infer_freq(df_filtered['date']) or '10s'
     date_range = pd.date_range(start=df_filtered['date'].min(), end=df_filtered['date'].max(), freq=inferred_freq)
     complete_dates_df = pd.DataFrame({'date': date_range})
     merged_df = pd.merge(complete_dates_df, df_filtered, how='left', on='date')
-
-    complete_df = merged_df.copy()
     missing_dates = set()
 
     for idx in range(1, len(merged_df) - 1):
@@ -114,11 +106,10 @@ def detect_and_correct_failures(df, measurement_columns, negative_variables):
     mode_freq = df['time_diff'].mode()[0]
     freq_mask = df['time_diff'] == mode_freq
 
-    avg_variations = {}
-    for col in measurement_columns:
-        variations = abs(df[col].diff())
-        avg_var = variations[freq_mask].mean()
-        avg_variations[col] = avg_var
+    avg_variations = {
+        col: abs(df[col].diff())[freq_mask].mean()
+        for col in measurement_columns
+    }
 
     correlations = df[measurement_columns].corr()
     strong_corrs = {
@@ -136,7 +127,6 @@ def detect_and_correct_failures(df, measurement_columns, negative_variables):
             prev_val = df.at[i - 1, col]
             if pd.isna(prev_val):
                 continue
-
             avg_var = avg_variations.get(col, 0)
             if avg_var == 0:
                 continue
@@ -156,8 +146,7 @@ def detect_and_correct_failures(df, measurement_columns, negative_variables):
                     expected_ratio = df.at[i - 1, col] / df.at[i - 1, corr_col] if df.at[i - 1, corr_col] != 0 else 0
                     expected_val = expected_ratio * df.at[i, corr_col]
                     if expected_val != 0 and abs(val - expected_val) > 3 * avg_var:
-                        corrected_val = expected_val
-                        df.at[i, col] = corrected_val
+                        df.at[i, col] = expected_val
                         detected_failures.append({'date': df.at[i, 'date'], 'variable': col, 'value': val, 'error_type': 'inconsistency'})
 
     df.drop(columns=['time_diff'], inplace=True)
@@ -169,3 +158,4 @@ def download_file(filename):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
+
