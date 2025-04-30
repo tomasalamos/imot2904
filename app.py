@@ -1,13 +1,17 @@
 import os
+import pickle
+import warnings
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory
 import pandas as pd
+import numpy as np
 from datetime import datetime
+
+warnings.filterwarnings('ignore')
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'upload'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# Ensure upload directory exists
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
@@ -46,25 +50,30 @@ def process():
     df_filtered = df.sort_values('date')
     df_to_save = df_filtered[['date'] + selected_vars]
 
-    # Save filtered data as CSV with formatted date
     df_to_save_copy = df_to_save.copy()
     df_to_save_copy['date'] = df_to_save_copy['date'].dt.strftime('%Y-%m-%d %H:%M:%S')
     df_to_save_copy.to_csv(os.path.join(app.config['UPLOAD_FOLDER'], 'filtered_data.csv'), index=False)
 
-    with open(os.path.join(app.config['UPLOAD_FOLDER'], 'negative_variables.txt'), 'w') as f:
-        for var in negative_vars:
-            f.write(f"{var}\n")
+    with open(os.path.join(app.config['UPLOAD_FOLDER'], 'negative_variables.pkl'), 'wb') as f:
+        pickle.dump(negative_vars, f)
 
-    # Interpolación y detección de fechas faltantes solo sobre las variables seleccionadas
     complete_data, missing_dates = complete_missing_data(df_to_save, selected_vars)
 
     complete_data['date'] = pd.to_datetime(complete_data['date']).dt.strftime('%Y-%m-%d %H:%M:%S')
     complete_data.to_csv(os.path.join(app.config['UPLOAD_FOLDER'], 'complete_data.csv'), index=False)
 
-    # Guardar fechas faltantes como TXT
     with open(os.path.join(app.config['UPLOAD_FOLDER'], 'missing_dates.txt'), 'w') as f:
         for date in missing_dates:
             f.write(f"{date}\n")
+
+    # TERCERA ETAPA: DETECCIÓN Y CORRECCIÓN DE FALLAS
+    corrected_df, detected_failures = detect_and_correct_failures(complete_data.copy(), selected_vars, negative_vars)
+    corrected_df.to_csv(os.path.join(app.config['UPLOAD_FOLDER'], 'corrected_data.csv'), index=False)
+
+    with open(os.path.join(app.config['UPLOAD_FOLDER'], 'detected_failures.csv'), 'w') as f:
+        f.write('date,variable,value,error_type\n')
+        for failure in detected_failures:
+            f.write(f"{failure['date']},{failure['variable']},{failure['value']},{failure['error_type']}\n")
 
     return render_template('results.html',
                            selected_vars=selected_vars,
@@ -74,45 +83,85 @@ def process():
 
 def complete_missing_data(df_filtered, measurement_columns):
     df_filtered = df_filtered.copy()
+    df_filtered['date'] = pd.to_datetime(df_filtered['date'])
 
-    date_column = 'date'
-    df_filtered[date_column] = pd.to_datetime(df_filtered[date_column])
-
-    # Inferir la frecuencia temporal (o asumir 10 segundos)
-    inferred_freq = pd.infer_freq(df_filtered[date_column])
+    inferred_freq = pd.infer_freq(df_filtered['date'])
     if inferred_freq is None:
-        inferred_freq = '10s'  # minúscula para evitar FutureWarning
+        inferred_freq = '10s'
 
-    date_range = pd.date_range(start=df_filtered[date_column].min(), 
-                               end=df_filtered[date_column].max(), 
-                               freq=inferred_freq)
-
-    complete_dates_df = pd.DataFrame({date_column: date_range})
-    merged_df = pd.merge(complete_dates_df, df_filtered, how='left', on=date_column)
+    date_range = pd.date_range(start=df_filtered['date'].min(), end=df_filtered['date'].max(), freq=inferred_freq)
+    complete_dates_df = pd.DataFrame({'date': date_range})
+    merged_df = pd.merge(complete_dates_df, df_filtered, how='left', on='date')
 
     complete_df = merged_df.copy()
+    missing_dates = set()
 
-    for col in measurement_columns:
-        if col not in complete_df.columns:
-            raise ValueError(f"La columna '{col}' no se encuentra en los datos. Revisa tu selección.")
-
-    missing_dates = set()  # Usar un set para fechas únicas
-
-    for idx in range(1, len(merged_df) - 1):  # Avoid the first and last index
+    for idx in range(1, len(merged_df) - 1):
         if pd.isna(merged_df.iloc[idx][measurement_columns]).any():
-            # Find the previous and next rows to calculate the average
             prev_row = merged_df.iloc[idx - 1]
             next_row = merged_df.iloc[idx + 1]
-            
             for col in measurement_columns:
                 if pd.isna(merged_df.at[idx, col]):
-                    # Calculate the average between the previous and next valid values
                     avg_value = (prev_row[col] + next_row[col]) / 2
                     merged_df.at[idx, col] = avg_value
-                    missing_dates.add(merged_df.at[idx, date_column].strftime('%Y-%m-%d %H:%M:%S'))
+                    missing_dates.add(merged_df.at[idx, 'date'].strftime('%Y-%m-%d %H:%M:%S'))
 
-    return merged_df[[date_column] + measurement_columns], list(missing_dates)  # Convert set back to list
+    return merged_df[['date'] + measurement_columns], list(missing_dates)
 
+def detect_and_correct_failures(df, measurement_columns, negative_variables):
+    df['date'] = pd.to_datetime(df['date'])
+    df['time_diff'] = df['date'].diff().dt.total_seconds()
+    mode_freq = df['time_diff'].mode()[0]
+    freq_mask = df['time_diff'] == mode_freq
+
+    avg_variations = {}
+    for col in measurement_columns:
+        variations = abs(df[col].diff())
+        avg_var = variations[freq_mask].mean()
+        avg_variations[col] = avg_var
+
+    correlations = df[measurement_columns].corr()
+    strong_corrs = {
+        col: correlations[col][(correlations[col].abs() > 0.7) & (correlations[col].abs() < 1.0)].index.tolist()
+        for col in measurement_columns
+    }
+
+    detected_failures = []
+
+    for i in range(1, len(df)):
+        for col in measurement_columns:
+            val = df.at[i, col]
+            if pd.isna(val):
+                continue
+            prev_val = df.at[i - 1, col]
+            if pd.isna(prev_val):
+                continue
+
+            avg_var = avg_variations.get(col, 0)
+            if avg_var == 0:
+                continue
+
+            if abs(val - prev_val) > 5 * avg_var:
+                df.at[i, col] = prev_val
+                detected_failures.append({'date': df.at[i, 'date'], 'variable': col, 'value': val, 'error_type': 'variation'})
+
+            elif col not in negative_variables and val < 0:
+                df.at[i, col] = 0
+                detected_failures.append({'date': df.at[i, 'date'], 'variable': col, 'value': val, 'error_type': 'negative'})
+
+            elif strong_corrs.get(col):
+                for corr_col in strong_corrs[col]:
+                    if pd.isna(df.at[i, corr_col]) or pd.isna(df.at[i - 1, corr_col]):
+                        continue
+                    expected_ratio = df.at[i - 1, col] / df.at[i - 1, corr_col] if df.at[i - 1, corr_col] != 0 else 0
+                    expected_val = expected_ratio * df.at[i, corr_col]
+                    if expected_val != 0 and abs(val - expected_val) > 3 * avg_var:
+                        corrected_val = expected_val
+                        df.at[i, col] = corrected_val
+                        detected_failures.append({'date': df.at[i, 'date'], 'variable': col, 'value': val, 'error_type': 'inconsistency'})
+
+    df.drop(columns=['time_diff'], inplace=True)
+    return df, detected_failures
 
 @app.route('/download/<filename>')
 def download_file(filename):
