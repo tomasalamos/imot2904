@@ -1,28 +1,31 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Resultados</title>
+    <meta charset="UTF-8">
+    <title>Results</title>
 </head>
 <body>
-    <h1>Resultados del análisis</h1>
-    <p><strong>Rango de fechas:</strong> {{ start_date }} - {{ end_date }}</p>
-    <p><strong>Total de registros:</strong> {{ record_count }}</p>
-    <p><strong>Variables de interés:</strong> {{ selected_vars|join(', ') }}</p>
-    <p><strong>Variables con valores negativos:</strong>
-        {% if negative_vars %}
-            {{ negative_vars|join(', ') }}
-        {% else %}
-            Ninguna
-        {% endif %}
-    </p>
+    <h1>Processing Complete</h1>
 
-    <h3>Descargar archivos:</h3>
+    <p><strong>Selected variables:</strong></p>
     <ul>
-        <li><a href="{{ url_for('download_file', filename=csv_file) }}">Descargar CSV</a></li>
-        <li><a href="{{ url_for('download_file', filename=txt_file) }}">Descargar TXT</a></li>
+        {% for var in selected_vars %}
+            <li>{{ var }}</li>
+        {% endfor %}
     </ul>
 
-    <br>
-    <a href="/">Volver al inicio</a>
+    <p><strong>Negative variables:</strong></p>
+    <ul>
+        {% for var in negative_vars %}
+            <li>{{ var }}</li>
+        {% endfor %}
+    </ul>
+
+    <p><strong>Date range:</strong> {{ start }} to {{ end }}</p>
+
+    <p><a href="{{ url_for('download_file', filename='filtered_data.csv') }}">Download filtered_data.csv</a></p>
+    <p><a href="{{ url_for('download_file', filename='negative_variables.pkl') }}">Download negative_variables.pkl</a></p>
+
+    <br><a href="{{ url_for('index') }}">Go back to start</a>
 </body>
 </html>
