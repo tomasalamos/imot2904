@@ -46,7 +46,7 @@ def process():
     df_filtered = df.sort_values('date')
     df_to_save = df_filtered[['date'] + selected_vars]
 
-    # Save filtered data as CSV with formatted date
+    # Save filtered data
     df_to_save_copy = df_to_save.copy()
     df_to_save_copy['date'] = df_to_save_copy['date'].dt.strftime('%Y-%m-%d %H:%M:%S')
     df_to_save_copy.to_csv(os.path.join(app.config['UPLOAD_FOLDER'], 'filtered_data.csv'), index=False)
@@ -58,10 +58,11 @@ def process():
     complete_data, missing_dates = complete_missing_data(df_filtered, selected_vars)
 
     complete_data['date'] = pd.to_datetime(complete_data['date']).dt.strftime('%Y-%m-%d %H:%M:%S')
-    missing_dates['date'] = pd.to_datetime(missing_dates['date']).dt.strftime('%Y-%m-%d %H:%M:%S')
 
+    # missing_dates ahora es una lista de strings; la convertimos a DataFrame para guardar
+    missing_dates_df = pd.DataFrame({'date': missing_dates})
+    missing_dates_df.to_csv(os.path.join(app.config['UPLOAD_FOLDER'], 'missing_dates.csv'), index=False)
     complete_data.to_csv(os.path.join(app.config['UPLOAD_FOLDER'], 'complete_data.csv'), index=False)
-    missing_dates.to_csv(os.path.join(app.config['UPLOAD_FOLDER'], 'missing_dates.csv'), index=False)
 
     return render_template('results.html',
                            selected_vars=selected_vars,
@@ -71,32 +72,26 @@ def process():
 
 def complete_missing_data(df_filtered, measurement_columns):
     df_filtered = df_filtered.copy()
-
-    date_column = df_filtered.columns[0]  # Se asume que la primera columna es la fecha
+    date_column = df_filtered.columns[0]
     df_filtered[date_column] = pd.to_datetime(df_filtered[date_column])
 
-    # Generar el rango completo de fechas a partir de min y max con la frecuencia más común
+    # Inferencia de frecuencia
     inferred_freq = pd.infer_freq(df_filtered[date_column])
     if inferred_freq is None:
-        inferred_freq = '10S'  # Valor por defecto si no se puede inferir
+        inferred_freq = '10s'  # ← Corrección aquí
 
     date_range = pd.date_range(start=df_filtered[date_column].min(), 
                                end=df_filtered[date_column].max(), 
                                freq=inferred_freq)
 
-    # Merge con el rango completo para detectar las fechas faltantes
     complete_dates_df = pd.DataFrame({date_column: date_range})
     merged_df = pd.merge(complete_dates_df, df_filtered, how='left', on=date_column)
-
-    # Crear una copia que será interpolada
     complete_df = merged_df.copy()
 
-    # Verificar si todas las columnas existen antes de procesar
     for col in measurement_columns:
         if col not in complete_df.columns:
-            raise ValueError(f"La columna '{col}' no se encuentra en los datos. Revisa tu selección.")
+            raise ValueError(f"La columna '{col}' no se encuentra en los datos.")
 
-    # Rellenar valores faltantes con interpolación por ventana
     for col in measurement_columns:
         null_mask = merged_df[col].isna()
         for idx in merged_df[null_mask].index:
@@ -106,11 +101,10 @@ def complete_missing_data(df_filtered, measurement_columns):
             interpolated_value = window.mean(skipna=True)
             complete_df.at[idx, col] = interpolated_value
 
-    # Detectar fechas faltantes
-    missing_dates = merged_df[merged_df[measurement_columns].isna().any(axis=1)][date_column].dt.strftime('%Y-%m-%d %H:%M:%S').tolist()
+    missing_dates = merged_df[merged_df[measurement_columns].isna().any(axis=1)][date_column]
+    missing_dates = [d.strftime('%Y-%m-%d %H:%M:%S') for d in missing_dates]
 
     return complete_df, missing_dates
-
 
 @app.route('/download/<filename>')
 def download_file(filename):
@@ -118,3 +112,4 @@ def download_file(filename):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
+
