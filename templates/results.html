@@ -2,34 +2,55 @@
 
 {% block content %}
   <div class="file-box green">
-      <h2>Resultados del Procesamiento de Datos</h2>
-      <p><strong>Variables seleccionadas:</strong></p>
-      <ul>
-          {% for var in selected_vars %}
-              <li>{{ var }}</li>
-          {% endfor %}
-      </ul>
+    <h2>Resultados del Procesamiento de Datos</h2>
+    <p><strong>Variables seleccionadas:</strong></p>
+    <ul>
+        {% for var in selected_vars %}
+            <li>{{ var }}</li>
+        {% endfor %}
+    </ul>
 
-      <p><strong>Variables negativas:</strong></p>
-      <ul>
-          {% for var in negative_vars %}
-              <li>{{ var }}</li>
-          {% endfor %}
-      </ul>
+    <p><strong>Variables negativas permitidas:</strong></p>
+    <ul>
+        {% for var in negative_vars %}
+            <li>{{ var }}</li>
+        {% endfor %}
+    </ul>
 
-      <p><strong>Rango de fechas:</strong> {{ start }} - {{ end }}</p>
+    <p><strong>Rango de fechas analizadas:</strong> {{ start }} - {{ end }}</p>
   </div>
 
   <div class="file-box orange">
-      <h3>Archivos Generados</h3>
-      <ul>
-          <li><a href="{{ url_for('download_file', filename='filtered_data.csv') }}" class="button">Datos Filtrados</a></li>
-          <li><a href="{{ url_for('download_file', filename='complete_data.csv') }}" class="button">Datos Completos</a></li>
-          <li><a href="{{ url_for('download_file', filename='missing_dates.txt') }}" class="button">Fechas Faltantes</a></li>
-          <li><a href="{{ url_for('download_file', filename='corrected_data.csv') }}" class="button">Datos Corregidos</a></li>
-          <li><a href="{{ url_for('download_file', filename='detected_failures.csv') }}" class="button">Fallas Detectadas</a></li>
-      </ul>
+    <h3>Archivos Generados</h3>
+    <div class="file-grid">
+
+      <div class="file-item">
+        <a href="{{ url_for('download_file', filename='filtered_data.csv') }}" class="button button-gray">Datos Filtrados</a>
+        <p>Registros con columnas inválidas y negativos no permitidos eliminados.</p>
+      </div>
+
+      <div class="file-item">
+        <a href="{{ url_for('download_file', filename='complete_data.csv') }}" class="button button-yellow">Datos Completos</a>
+        <p>Datos con fechas completadas e integridad temporal asegurada.</p>
+      </div>
+
+      <div class="file-item">
+        <a href="{{ url_for('download_file', filename='missing_dates.txt') }}" class="button button-purple">Fechas Faltantes</a>
+        <p>Fechas identificadas como ausentes en el conjunto original.</p>
+      </div>
+
+      <div class="file-item">
+        <a href="{{ url_for('download_file', filename='corrected_data.csv') }}" class="button button-green">Datos Corregidos</a>
+        <p>Versión limpia y final con valores imputados y sin errores.</p>
+      </div>
+
+      <div class="file-item">
+        <a href="{{ url_for('download_file', filename='detected_failures.csv') }}" class="button button-red">Fallas Detectadas</a>
+        <p>Errores o fallos encontrados durante el análisis automático.</p>
+      </div>
+
+    </div>
   </div>
 
-  <a href="/" class="button">Volver al Inicio</a>
+  <a href="/" class="button button-blue">Volver al Inicio</a>
 {% endblock %}

@@ -1,98 +1,121 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>{{ title or "Procesamiento de Datos Mineros" }}</title>
-  <style>
-    body {
-      font-family: "Segoe UI", sans-serif;
-      background-color: #fff;
-      color: #000;
-      margin: 0;
-      padding: 0 2rem;
-    }
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  body {
+    font-family: "Inter", sans-serif;
+    background-color: #fff;
+    color: #111;
+    margin: 0;
+    padding: 0 2rem;
+    font-weight: 300;
+    font-size: 16px;
+  }
 
-    header {
-      padding: 1rem 0;
-      border-bottom: 1px solid #ccc;
-      margin-bottom: 2rem;
-    }
+  header {
+    padding: 1rem 0;
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 2rem;
+  }
 
-    h1 {
-      font-size: 2rem;
-      margin: 0;
-    }
+  h1 {
+    font-size: 2rem;
+    margin: 0;
+    font-weight: 600;
+  }
 
-    section {
-      margin-bottom: 2rem;
-    }
+  section {
+    margin-bottom: 2rem;
+  }
 
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      max-width: 600px;
-    }
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: 600px;
+  }
 
-    input, select, button {
-      padding: 0.6rem;
-      font-size: 1rem;
-    }
+  input, select, button {
+    padding: 0.6rem;
+    font-size: 1rem;
+    font-family: inherit;
+  }
 
-    .button {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      cursor: pointer;
-      border-radius: 4px;
-      text-align: center;
-      padding: 0.6rem 1rem;
-      text-decoration: none;
-    }
+  .button {
+    padding: 0.6rem 1rem;
+    font-size: 1rem;
+    font-weight: 400;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+  }
 
-    .button:hover {
-      background-color: #0056b3;
-    }
+  .button-blue { background-color: #007bff; color: white; }
+  .button-blue:hover { background-color: #0056b3; }
 
-    .file-box {
-      background-color: #f4f4f4;
-      padding: 1rem;
-      border-left: 4px solid #007bff;
-      margin-bottom: 1rem;
-      border-radius: 4px;
-    }
+  .button-gray { background-color: #6c757d; color: white; }
+  .button-gray:hover { background-color: #5a6268; }
 
-    .file-box.green { border-color: #28a745; }
-    .file-box.red { border-color: #dc3545; }
-    .file-box.orange { border-color: #fd7e14; }
+  .button-yellow { background-color: #ffc107; color: #000; }
+  .button-yellow:hover { background-color: #e0a800; }
 
-    .file-box p {
-      margin: 0.5rem 0;
-    }
+  .button-purple { background-color: #6f42c1; color: white; }
+  .button-purple:hover { background-color: #5936a2; }
 
-    .checkbox-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
+  .button-green { background-color: #28a745; color: white; }
+  .button-green:hover { background-color: #218838; }
 
-    footer {
-      margin-top: 3rem;
-      font-size: 0.9rem;
-      color: #777;
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <h1>{{ title or "Procesamiento de Datos Mineros" }}</h1>
-  </header>
-  <main>
-    {% block content %}{% endblock %}
-  </main>
-  <footer>
-    Plataforma para detección y corrección automática de errores en data minera.
-  </footer>
-</body>
-</html>
+  .button-red { background-color: #dc3545; color: white; }
+  .button-red:hover { background-color: #bd2130; }
+
+  .file-box {
+    background-color: #f4f4f4;
+    padding: 1rem;
+    border-left: 4px solid #007bff;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+  }
+
+  .file-box.green { border-color: #28a745; }
+  .file-box.red { border-color: #dc3545; }
+  .file-box.orange { border-color: #fd7e14; }
+
+  .file-box p {
+    margin: 0.5rem 0;
+  }
+
+  .checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .file-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .file-item {
+    flex: 1 1 250px;
+    min-width: 220px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 0 5px rgba(0,0,0,0.05);
+  }
+
+  .file-item p {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: #333;
+  }
+
+  footer {
+    margin-top: 3rem;
+    font-size: 0.9rem;
+    color: #777;
+  }
+</style>
+
