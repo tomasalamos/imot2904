@@ -96,7 +96,7 @@ def complete_missing_data(df_filtered, measurement_columns):
         if col not in complete_df.columns:
             raise ValueError(f"La columna '{col}' no se encuentra en los datos. Revisa tu selección.")
 
-    missing_dates = []
+    missing_dates = set()  # Usar un set para fechas únicas
 
     for idx in range(1, len(merged_df) - 1):  # Avoid the first and last index
         if pd.isna(merged_df.iloc[idx][measurement_columns]).any():
@@ -109,9 +109,10 @@ def complete_missing_data(df_filtered, measurement_columns):
                     # Calculate the average between the previous and next valid values
                     avg_value = (prev_row[col] + next_row[col]) / 2
                     merged_df.at[idx, col] = avg_value
-                    missing_dates.append(merged_df.at[idx, date_column].strftime('%Y-%m-%d %H:%M:%S'))
+                    missing_dates.add(merged_df.at[idx, date_column].strftime('%Y-%m-%d %H:%M:%S'))
 
-    return merged_df[[date_column] + measurement_columns], missing_dates
+    return merged_df[[date_column] + measurement_columns], list(missing_dates)  # Convert set back to list
+
 
 @app.route('/download/<filename>')
 def download_file(filename):
