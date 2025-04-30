@@ -1,54 +1,35 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resultados de Procesamiento</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-</head>
-<body>
-    <div class="container">
-        <h1 class="mt-5">Resultados del Procesamiento de Datos</h1>
-        <div class="alert alert-success mt-4">
-            <h4 class="alert-heading">Procesamiento Exitoso</h4>
-            <p>El archivo de datos ha sido procesado, completado y corregido correctamente. Aquí están los detalles:</p>
-            <ul>
-                <li><strong>Variables seleccionadas:</strong> 
-                    <ul>
-                        {% for var in selected_vars %}
-                            <li>{{ var }}</li>
-                        {% endfor %}
-                    </ul>
-                </li>
-                <li><strong>Variables negativas:</strong> 
-                    <ul>
-                        {% for var in negative_vars %}
-                            <li>{{ var }}</li>
-                        {% endfor %}
-                    </ul>
-                </li>
-                <li><strong>Rango de fechas:</strong> {{ start }} - {{ end }}</li>
-            </ul>
-        </div>
+{% extends "layout.html" %}
 
-        <div class="alert alert-info mt-4">
-            <h4 class="alert-heading">Archivos Generados</h4>
-            <ul>
-                <li><a href="{{ url_for('download_file', filename='filtered_data.csv') }}" class="btn btn-primary">Descargar Datos Filtrados</a></li>
-                <li><a href="{{ url_for('download_file', filename='complete_data.csv') }}" class="btn btn-primary">Descargar Datos Completos</a></li>
-                <li><a href="{{ url_for('download_file', filename='missing_dates.txt') }}" class="btn btn-primary">Descargar Fechas Faltantes</a></li>
-                <li><a href="{{ url_for('download_file', filename='corrected_data.csv') }}" class="btn btn-success">Descargar Datos Corregidos</a></li>
-                <li><a href="{{ url_for('download_file', filename='detected_failures.csv') }}" class="btn btn-danger">Descargar Fallas Detectadas</a></li>
-            </ul>
-        </div>
-        
-        <div class="mt-4">
-            <a href="/" class="btn btn-secondary">Volver al Inicio</a>
-        </div>
-    </div>
+{% block content %}
+  <div class="file-box green">
+      <h2>Resultados del Procesamiento de Datos</h2>
+      <p><strong>Variables seleccionadas:</strong></p>
+      <ul>
+          {% for var in selected_vars %}
+              <li>{{ var }}</li>
+          {% endfor %}
+      </ul>
 
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-</body>
-</html>
+      <p><strong>Variables negativas:</strong></p>
+      <ul>
+          {% for var in negative_vars %}
+              <li>{{ var }}</li>
+          {% endfor %}
+      </ul>
+
+      <p><strong>Rango de fechas:</strong> {{ start }} - {{ end }}</p>
+  </div>
+
+  <div class="file-box orange">
+      <h3>Archivos Generados</h3>
+      <ul>
+          <li><a href="{{ url_for('download_file', filename='filtered_data.csv') }}" class="button">Datos Filtrados</a></li>
+          <li><a href="{{ url_for('download_file', filename='complete_data.csv') }}" class="button">Datos Completos</a></li>
+          <li><a href="{{ url_for('download_file', filename='missing_dates.txt') }}" class="button">Fechas Faltantes</a></li>
+          <li><a href="{{ url_for('download_file', filename='corrected_data.csv') }}" class="button">Datos Corregidos</a></li>
+          <li><a href="{{ url_for('download_file', filename='detected_failures.csv') }}" class="button">Fallas Detectadas</a></li>
+      </ul>
+  </div>
+
+  <a href="/" class="button">Volver al Inicio</a>
+{% endblock %}

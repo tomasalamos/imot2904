@@ -1,26 +1,22 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Select Parameters</title>
-</head>
-<body>
-    <h1>Select Variables</h1>
-    <form action="/process" method="post">
-        <!-- No date fields since filtering by date was removed -->
+{% extends "layout.html" %}
 
-        <h3>Variables of Interest:</h3>
+{% block content %}
+  <h1>Select Variables</h1>
+  <form action="/process" method="post">
+      <h3>Variables of Interest:</h3>
+      <div class="checkbox-group">
         {% for var in variables %}
-            <input type="checkbox" name="variables" value="{{ var }}"> {{ var }}<br>
+            <label><input type="checkbox" name="variables" value="{{ var }}"> {{ var }}</label>
         {% endfor %}
+      </div>
 
-        <h3>Variables That Allow Negative Values:</h3>
+      <h3>Variables That Allow Negative Values:</h3>
+      <div class="checkbox-group">
         {% for var in variables %}
-            <input type="checkbox" name="negative_variables" value="{{ var }}"> {{ var }}<br>
+            <label><input type="checkbox" name="negative_variables" value="{{ var }}"> {{ var }}</label>
         {% endfor %}
+      </div>
 
-        <br>
-        <button type="submit">Process</button>
-    </form>
-</body>
-</html>
+      <button type="submit" class="button">Process</button>
+  </form>
+{% endblock %}
