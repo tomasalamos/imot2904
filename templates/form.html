@@ -1,23 +1,26 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Seleccionar Parámetros</title>
+    <meta charset="UTF-8">
+    <title>Select Parameters</title>
 </head>
 <body>
-    <h1>Selecciona las variables</h1>
+    <h1>Select Variables</h1>
     <form action="/process" method="post">
-        <h3>Variables de interés:</h3>
+        <!-- No date fields since filtering by date was removed -->
+
+        <h3>Variables of Interest:</h3>
         {% for var in variables %}
             <input type="checkbox" name="variables" value="{{ var }}"> {{ var }}<br>
         {% endfor %}
 
-        <h3>Variables que permiten valores negativos:</h3>
+        <h3>Variables That Allow Negative Values:</h3>
         {% for var in variables %}
             <input type="checkbox" name="negative_variables" value="{{ var }}"> {{ var }}<br>
         {% endfor %}
 
         <br>
-        <button type="submit">Procesar</button>
+        <button type="submit">Process</button>
     </form>
 </body>
 </html>

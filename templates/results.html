@@ -7,25 +7,34 @@
 <body>
     <h1>Processing Complete</h1>
 
-    <p><strong>Selected variables:</strong></p>
+    <p><strong>Start date:</strong> {{ start }}</p>
+    <p><strong>End date:</strong> {{ end }}</p>
+
+    <h2>Selected Variables:</h2>
     <ul>
         {% for var in selected_vars %}
-            <li>{{ var }}</li>
+        <li>{{ var }}</li>
         {% endfor %}
     </ul>
 
-    <p><strong>Negative variables:</strong></p>
+    <h2>Negative Variables:</h2>
+    {% if negative_vars %}
     <ul>
         {% for var in negative_vars %}
-            <li>{{ var }}</li>
+        <li>{{ var }}</li>
         {% endfor %}
     </ul>
+    {% else %}
+    <p>No negative variables selected.</p>
+    {% endif %}
 
-    <p><strong>Date range:</strong> {{ start }} to {{ end }}</p>
+    <h2>Downloads:</h2>
+    <ul>
+        <li><a href="{{ url_for('download_file', filename='filtered_data.csv') }}">Download filtered_data.csv</a></li>
+        <li><a href="{{ url_for('download_file', filename='negative_variables.txt') }}">Download negative_variables.txt</a></li>
+    </ul>
 
-    <p><a href="{{ url_for('download_file', filename='filtered_data.csv') }}">Download filtered_data.csv</a></p>
-    <p><a href="{{ url_for('download_file', filename='negative_variables.pkl') }}">Download negative_variables.pkl</a></p>
-
-    <br><a href="{{ url_for('index') }}">Go back to start</a>
+    <p><a href="{{ url_for('index') }}">Upload another file</a></p>
 </body>
 </html>
+
