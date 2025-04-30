@@ -41,7 +41,7 @@ def process():
     df = df.dropna(subset=['date'])
 
     selected_vars = request.form.getlist('variables')
-    negative_vars = request.form.getlist('negatives')
+    negative_vars = request.form.getlist('negative_variables')
 
     # Sort by date and prepare filtered DataFrame
     df_filtered = df.sort_values('date')
