@@ -69,9 +69,9 @@ def process():
     corrected_df.to_csv(os.path.join(app.config['UPLOAD_FOLDER'], 'corrected_data.csv'), index=False)
 
     with open(os.path.join(app.config['UPLOAD_FOLDER'], 'detected_failures.csv'), 'w') as f:
-        f.write('date,variable,value,error_type\n')
+        f.write('date,variable,original_value,expected_value,error_type\n')
         for failure in detected_failures:
-            f.write(f"{failure['date']},{failure['variable']},{failure['value']},{failure['error_type']}\n")
+            f.write(f"{failure['date']},{failure['variable']},{failure['original_value']},{failure['expected_value']},{failure['error_type']}\n")
 
     return render_template('results.html',
                            selected_vars=selected_vars,
@@ -132,12 +132,26 @@ def detect_and_correct_failures(df, measurement_columns, negative_variables):
                 continue
 
             if abs(val - prev_val) > 5 * avg_var:
-                df.at[i, col] = prev_val
-                detected_failures.append({'date': df.at[i, 'date'], 'variable': col, 'value': val, 'error_type': 'variation'})
+                expected_val = prev_val
+                df.at[i, col] = expected_val
+                detected_failures.append({
+                    'date': df.at[i, 'date'],
+                    'variable': col,
+                    'original_value': val,
+                    'expected_value': expected_val,
+                    'error_type': 'variation'
+                })
 
             elif col not in negative_variables and val < 0:
-                df.at[i, col] = 0
-                detected_failures.append({'date': df.at[i, 'date'], 'variable': col, 'value': val, 'error_type': 'negative'})
+                expected_val = 0
+                df.at[i, col] = expected_val
+                detected_failures.append({
+                    'date': df.at[i, 'date'],
+                    'variable': col,
+                    'original_value': val,
+                    'expected_value': expected_val,
+                    'error_type': 'negative'
+                })
 
             elif strong_corrs.get(col):
                 for corr_col in strong_corrs[col]:
@@ -147,7 +161,13 @@ def detect_and_correct_failures(df, measurement_columns, negative_variables):
                     expected_val = expected_ratio * df.at[i, corr_col]
                     if expected_val != 0 and abs(val - expected_val) > 3 * avg_var:
                         df.at[i, col] = expected_val
-                        detected_failures.append({'date': df.at[i, 'date'], 'variable': col, 'value': val, 'error_type': 'inconsistency'})
+                        detected_failures.append({
+                            'date': df.at[i, 'date'],
+                            'variable': col,
+                            'original_value': val,
+                            'expected_value': expected_val,
+                            'error_type': 'inconsistency'
+                        })
 
     df.drop(columns=['time_diff'], inplace=True)
     return df, detected_failures
@@ -158,4 +178,3 @@ def download_file(filename):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
-
