@@ -46,7 +46,7 @@ def process():
     df_filtered = df.sort_values('date')
     df_to_save = df_filtered[['date'] + selected_vars]
 
-    # Save filtered data
+    # Save filtered data as CSV with formatted date
     df_to_save_copy = df_to_save.copy()
     df_to_save_copy['date'] = df_to_save_copy['date'].dt.strftime('%Y-%m-%d %H:%M:%S')
     df_to_save_copy.to_csv(os.path.join(app.config['UPLOAD_FOLDER'], 'filtered_data.csv'), index=False)
@@ -55,14 +55,16 @@ def process():
         for var in negative_vars:
             f.write(f"{var}\n")
 
-    complete_data, missing_dates = complete_missing_data(df_filtered, selected_vars)
+    # Interpolación y detección de fechas faltantes solo sobre las variables seleccionadas
+    complete_data, missing_dates = complete_missing_data(df_to_save, selected_vars)
 
     complete_data['date'] = pd.to_datetime(complete_data['date']).dt.strftime('%Y-%m-%d %H:%M:%S')
-
-    # missing_dates ahora es una lista de strings; la convertimos a DataFrame para guardar
-    missing_dates_df = pd.DataFrame({'date': missing_dates})
-    missing_dates_df.to_csv(os.path.join(app.config['UPLOAD_FOLDER'], 'missing_dates.csv'), index=False)
     complete_data.to_csv(os.path.join(app.config['UPLOAD_FOLDER'], 'complete_data.csv'), index=False)
+
+    # Guardar fechas faltantes como TXT
+    with open(os.path.join(app.config['UPLOAD_FOLDER'], 'missing_dates.txt'), 'w') as f:
+        for date in missing_dates:
+            f.write(f"{date}\n")
 
     return render_template('results.html',
                            selected_vars=selected_vars,
@@ -72,13 +74,14 @@ def process():
 
 def complete_missing_data(df_filtered, measurement_columns):
     df_filtered = df_filtered.copy()
-    date_column = df_filtered.columns[0]
+
+    date_column = 'date'
     df_filtered[date_column] = pd.to_datetime(df_filtered[date_column])
 
-    # Inferencia de frecuencia
+    # Inferir la frecuencia temporal (o asumir 10 segundos)
     inferred_freq = pd.infer_freq(df_filtered[date_column])
     if inferred_freq is None:
-        inferred_freq = '10s'  # ← Corrección aquí
+        inferred_freq = '10s'  # minúscula para evitar FutureWarning
 
     date_range = pd.date_range(start=df_filtered[date_column].min(), 
                                end=df_filtered[date_column].max(), 
@@ -86,11 +89,12 @@ def complete_missing_data(df_filtered, measurement_columns):
 
     complete_dates_df = pd.DataFrame({date_column: date_range})
     merged_df = pd.merge(complete_dates_df, df_filtered, how='left', on=date_column)
+
     complete_df = merged_df.copy()
 
     for col in measurement_columns:
         if col not in complete_df.columns:
-            raise ValueError(f"La columna '{col}' no se encuentra en los datos.")
+            raise ValueError(f"La columna '{col}' no se encuentra en los datos. Revisa tu selección.")
 
     for col in measurement_columns:
         null_mask = merged_df[col].isna()
@@ -101,10 +105,9 @@ def complete_missing_data(df_filtered, measurement_columns):
             interpolated_value = window.mean(skipna=True)
             complete_df.at[idx, col] = interpolated_value
 
-    missing_dates = merged_df[merged_df[measurement_columns].isna().any(axis=1)][date_column]
-    missing_dates = [d.strftime('%Y-%m-%d %H:%M:%S') for d in missing_dates]
+    missing_dates = merged_df[merged_df[measurement_columns].isna().any(axis=1)][date_column].dt.strftime('%Y-%m-%d %H:%M:%S').tolist()
 
-    return complete_df, missing_dates
+    return complete_df[[date_column] + measurement_columns], missing_dates
 
 @app.route('/download/<filename>')
 def download_file(filename):
@@ -112,4 +115,3 @@ def download_file(filename):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
-
