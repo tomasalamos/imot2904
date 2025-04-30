@@ -69,70 +69,48 @@ def process():
                            start=df['date'].min().strftime('%Y-%m-%d %H:%M:%S'),
                            end=df['date'].max().strftime('%Y-%m-%d %H:%M:%S'))
 
-def complete_missing_data(df_filtered, selected_vars):
-    date_column = 'date'
-    measurement_columns = selected_vars
+def complete_missing_data(df_filtered, measurement_columns):
+    df_filtered = df_filtered.copy()
 
-    start_date = df_filtered[date_column].min()
-    end_date = df_filtered[date_column].max()
+    date_column = df_filtered.columns[0]  # Se asume que la primera columna es la fecha
+    df_filtered[date_column] = pd.to_datetime(df_filtered[date_column])
 
-    intervals = df_filtered[date_column].diff().dropna()
-    most_frequent_interval = intervals.value_counts().idxmax()
+    # Generar el rango completo de fechas a partir de min y max con la frecuencia más común
+    inferred_freq = pd.infer_freq(df_filtered[date_column])
+    if inferred_freq is None:
+        inferred_freq = '10S'  # Valor por defecto si no se puede inferir
 
-    minute_intervals = intervals.dt.total_seconds() / 60
-    large_intervals = minute_intervals[minute_intervals > 5]
+    date_range = pd.date_range(start=df_filtered[date_column].min(), 
+                               end=df_filtered[date_column].max(), 
+                               freq=inferred_freq)
 
-    date_ranges = []
-    current_date = start_date
+    # Merge con el rango completo para detectar las fechas faltantes
+    complete_dates_df = pd.DataFrame({date_column: date_range})
+    merged_df = pd.merge(complete_dates_df, df_filtered, how='left', on=date_column)
 
-    for idx in large_intervals.index:
-        if idx == 0 or idx >= len(df_filtered):
-            continue
-        start = df_filtered[date_column].iloc[idx - 1]
-        end = df_filtered[date_column].iloc[idx]
-        if current_date < start:
-            range_end = min(start, end_date)
-            date_ranges.append(pd.date_range(start=current_date, end=range_end, freq=most_frequent_interval))
-        current_date = end
+    # Crear una copia que será interpolada
+    complete_df = merged_df.copy()
 
-    if current_date < end_date:
-        date_ranges.append(pd.date_range(start=current_date, end=end_date, freq=most_frequent_interval))
-
-    if not date_ranges:
-        return df_filtered, pd.DataFrame(columns=['date'])
-
-    date_range = pd.concat([pd.Series(r) for r in date_ranges])
-    complete_df = pd.DataFrame({date_column: date_range})
-
-    merged_df = pd.merge(complete_df, df_filtered, on=date_column, how="left")
-
-    previous_df = pd.DataFrame()
-    next_df = pd.DataFrame()
-
+    # Verificar si todas las columnas existen antes de procesar
     for col in measurement_columns:
-        previous_df[f'{col}_previous'] = merged_df[col].ffill()
-        next_df[f'{col}_next'] = merged_df[col].bfill()
+        if col not in complete_df.columns:
+            raise ValueError(f"La columna '{col}' no se encuentra en los datos. Revisa tu selección.")
 
-    intervals = pd.DataFrame({
-        'previous_interval': merged_df[date_column].diff().dt.total_seconds() / 60,
-        'next_interval': merged_df[date_column].diff(-1).dt.total_seconds().abs() / 60
-    })
-
-    temp_df = pd.concat([merged_df, previous_df, next_df, intervals], axis=1)
-    complete_mask = (temp_df['previous_interval'] < 5) & (temp_df['next_interval'] < 5)
-
+    # Rellenar valores faltantes con interpolación por ventana
     for col in measurement_columns:
-        factor = temp_df['previous_interval'] / (temp_df['previous_interval'] + temp_df['next_interval'])
-        variation = temp_df[f'{col}_next'] - temp_df[f'{col}_previous']
-        interpolated_value = temp_df[f'{col}_previous'] + (variation * factor)
-        complete_df.loc[complete_mask & complete_df[col].isna(), col] = interpolated_value
+        null_mask = merged_df[col].isna()
+        for idx in merged_df[null_mask].index:
+            window_start = max(0, idx - 3)
+            window_end = min(len(merged_df), idx + 4)
+            window = merged_df.loc[window_start:window_end, col]
+            interpolated_value = window.mean(skipna=True)
+            complete_df.at[idx, col] = interpolated_value
 
-    missing_rows = merged_df[measurement_columns].isna().any(axis=1)
-    missing_dates = complete_df.loc[missing_rows, date_column]
+    # Detectar fechas faltantes
+    missing_dates = merged_df[merged_df[measurement_columns].isna().any(axis=1)][date_column].dt.strftime('%Y-%m-%d %H:%M:%S').tolist()
 
-    missing_dates_df = pd.DataFrame({"date": missing_dates})
+    return complete_df, missing_dates
 
-    return complete_df, missing_dates_df
 
 @app.route('/download/<filename>')
 def download_file(filename):
