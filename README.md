@@ -1,57 +1,57 @@
-# 🛠️ Web Platform for Filtering, Completing, and Correcting Mining Equipment Data
+# 🛠️ Web Platform for Industrial Process Data Analysis and Correction
 
-This web application allows you to upload `.csv` sensor datasets, select variables, fill missing timestamps, detect outliers, and automatically correct common issues like negative or inconsistent values.
+This web application provides a comprehensive solution for processing, analyzing, and correcting industrial sensor data. It enables users to upload `.csv` datasets, perform variable selection, complete missing timestamps, detect anomalies, and automatically correct common data inconsistencies.
 
 ---
 
 ## 🚀 Features
 
 1. **CSV File Upload**
-   - Must contain a `date` column.
-   - Variables should be numeric.
+   - Requires a `date` column for temporal analysis
+   - Supports numeric variables for processing
 
 2. **Variable Selection**
-   - Select which variables to analyze.
-   - Mark those that **can have negative values**.
+   - Flexible selection of variables for analysis
+   - Configuration of variables that permit negative values
 
 3. **Data Filtering & Cleaning**
-   - Removes invalid or corrupted records.
-   - Saves cleaned data as `filtered_data.csv`.
+   - Systematic removal of invalid or corrupted records
+   - Output saved as `filtered_data.csv`
 
 4. **Missing Data Completion**
-   - Automatically detects time frequency (e.g., every 10 seconds).
-   - Inserts missing timestamps.
-   - Imputes missing values using the average of temporal neighbors.
-   - Results saved as `complete_data.csv` and `missing_dates.txt`.
+   - Automatic detection of temporal sampling frequency
+   - Intelligent insertion of missing timestamps
+   - Missing value imputation using temporal neighborhood averaging
+   - Results exported as `complete_data.csv` and `missing_dates.txt`
 
-5. **Automatic Fault Detection & Correction**
-   - Detects sudden abnormal jumps (greater than 5× the average variation).
-   - Corrects negative values (if not allowed).
-   - Flags inconsistencies in correlated variables.
-   - Final results saved in `corrected_data.csv` and `detected_failures.csv`.
+5. **Anomaly Detection & Data Correction**
+   - Detection of significant value deviations (threshold: 5× average variation)
+   - Automatic correction of invalid negative values
+   - Identification of inconsistencies in correlated variables
+   - Final results stored in `corrected_data.csv` and `detected_failures.csv`
 
 ---
 
-## 🧪 Generated Files
+## 📊 Output Files
 
 | File Name | Description |
 |-----------|-------------|
-| `filtered_data.csv` | Cleaned data based on selected variables |
-| `complete_data.csv` | Data with completed timestamps and imputed values |
-| `missing_dates.txt` | List of detected missing timestamps |
-| `corrected_data.csv` | Data after applying automatic corrections |
-| `detected_failures.csv` | Detailed list of detected failures and anomalies |
+| `filtered_data.csv` | Cleaned dataset containing selected variables |
+| `complete_data.csv` | Dataset with completed timestamps and imputed values |
+| `missing_dates.txt` | Documented list of identified missing timestamps |
+| `corrected_data.csv` | Final dataset after automated corrections |
+| `detected_failures.csv` | Comprehensive report of detected anomalies and corrections |
 
 ---
 
-## 🧰 Requirements
+## 🧰 Technical Requirements
 
-- Python 3.8+
+- Python 3.8 or higher
 - Flask
 - Pandas
-- Numpy
+- NumPy
 
-To install dependencies:
+Installation of dependencies:
 
 ```bash
 pip install -r requirements.txt

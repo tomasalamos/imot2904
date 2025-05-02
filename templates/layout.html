@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>{{ title or "Procesamiento de Datos Mineros" }}</title>
+  <title>{{ title or "Data Processing Platform" }}</title>
   <style>
     body {
       font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-      background-color: #fff;
-      color: #111;
+      background-color: #111;
+      color: #fff;
       margin: 0;
       padding: 0 2rem;
       font-weight: 300;
@@ -17,7 +17,7 @@
 
     header {
       padding: 1rem 0;
-      border-bottom: 1px solid #ccc;
+      border-bottom: 1px solid #444;
       margin-bottom: 2rem;
     }
 
@@ -42,6 +42,9 @@
       padding: 0.6rem;
       font-size: 1rem;
       font-family: inherit;
+      background-color: #222;
+      color: #fff;
+      border: 1px solid #444;
     }
 
     .button {
@@ -56,14 +59,11 @@
       display: inline-block;
     }
 
-    .button-blue { background-color: #007bff; color: white; }
-    .button-blue:hover { background-color: #0056b3; }
-
     .button-gray { background-color: #6c757d; color: white; }
     .button-gray:hover { background-color: #5a6268; }
 
-    .button-yellow { background-color: #ffc107; color: #000; }
-    .button-yellow:hover { background-color: #e0a800; }
+    .button-yellow { background-color: #f5a623; color: #000; }
+    .button-yellow:hover { background-color: #d48806; }
 
     .button-purple { background-color: #6f42c1; color: white; }
     .button-purple:hover { background-color: #5936a2; }
@@ -75,7 +75,7 @@
     .button-red:hover { background-color: #bd2130; }
 
     .file-box {
-      background-color: #f4f4f4;
+      background-color: #222;
       padding: 1rem;
       border-left: 4px solid #007bff;
       margin-bottom: 1rem;
@@ -105,16 +105,16 @@
     .file-item {
       flex: 1 1 250px;
       min-width: 220px;
-      background-color: #f9f9f9;
+      background-color: #333;
       border-radius: 8px;
       padding: 1rem;
-      box-shadow: 0 0 5px rgba(0,0,0,0.05);
+      box-shadow: 0 0 5px rgba(255,255,255,0.05);
     }
 
     .file-item p {
       margin-top: 0.5rem;
       font-size: 0.9rem;
-      color: #333;
+      color: #ccc;
     }
 
     footer {
@@ -126,13 +126,13 @@
 </head>
 <body>
   <header>
-    <h1>{{ title or "Procesamiento de Datos Mineros" }}</h1>
+    <h1>{{ title or "Data Processing Platform" }}</h1>
   </header>
   <main>
     {% block content %}{% endblock %}
   </main>
   <footer>
-    Plataforma para detección y corrección automática de errores en data minera.
+    Data processing platform for automatic detection and correction of errors.
   </footer>
 </body>
 </html>
