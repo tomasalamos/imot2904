@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 
 {% block content %}
-  <div class="file-box green">
+  <div class="file-box yellow">
     <h2>Data Processing Results</h2>
     <p><strong>Selected variables:</strong></p>
     <ul>
@@ -20,7 +20,7 @@
     <p><strong>Date range analyzed:</strong> {{ start }} - {{ end }}</p>
   </div>
 
-  <div class="file-box orange">
+  <div class="file-box yellow">
     <h3>Generated files</h3>
     <div class="file-grid">
 
@@ -30,7 +30,7 @@
       </div>
 
       <div class="file-item">
-        <a href="{{ url_for('download_file', filename='complete_data.csv') }}" class="button button-yellow">Complete data</a>
+        <a href="{{ url_for('download_file', filename='complete_data.csv') }}" class="button button-blue">Complete data</a>
         <p>Data with completed dates and temporal integrity ensured.</p>
       </div>
 
@@ -52,6 +52,6 @@
     </div>
   </div>
 
-  <a href="/" class="button button-gray">Back to the beginning</a>
+  <a href="/" class="button button-yellow">Back to the beginning</a>
 {% endblock %}
 
