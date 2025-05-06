@@ -29,15 +29,15 @@ USERS = {
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        user = request.form['username']
+        username = request.form['username']
         password = request.form['password']
-        if user in USERS and USERS[user] == password:
-            session['user'] = user
+        if username == 'admin' and password == 'admin':
+            session['logged_in'] = True
             return redirect(url_for('index'))
         else:
-            flash('Usuario o contraseña incorrectos', 'error')
-            return redirect(url_for('login'))
+            return 'Usuario o contraseña incorrectos', 401
     return render_template('login.html')
+
 
 @app.route('/logout')
 def logout():
