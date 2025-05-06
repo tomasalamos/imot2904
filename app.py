@@ -1,7 +1,7 @@
 import os
 import pickle
 import warnings
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory, session, flash
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -9,17 +9,65 @@ from datetime import datetime
 warnings.filterwarnings('ignore')
 
 app = Flask(__name__)
+app.secret_key = 'supersecretkey123'  # Cambiar por una clave segura
+
 UPLOAD_FOLDER = 'upload'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
+# ========================
+# Login y autenticación
+# ========================
+
+USERS = {
+    'admin': 'admin123',  # Usuario de ejemplo
+    'usuario': 'clave123'
+}
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        user = request.form['username']
+        password = request.form['password']
+        if user in USERS and USERS[user] == password:
+            session['user'] = user
+            return redirect(url_for('index'))
+        else:
+            flash('Usuario o contraseña incorrectos', 'error')
+            return redirect(url_for('login'))
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('user', None)
+    flash('Has cerrado sesión', 'info')
+    return redirect(url_for('login'))
+
+# Decorador para proteger rutas
+from functools import wraps
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user' not in session:
+            flash('Debes iniciar sesión para acceder.', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# ========================
+# Rutas protegidas
+# ========================
+
 @app.route('/')
+@login_required
 def index():
     return render_template('index.html')
 
 @app.route('/form', methods=['POST'])
+@login_required
 def form():
     file = request.files['file']
     if file.filename == '':
@@ -38,6 +86,7 @@ def form():
     return render_template('form.html', variables=numeric_columns, min_date=min_date, max_date=max_date)
 
 @app.route('/process', methods=['POST'])
+@login_required
 def process():
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'data.csv')
     df = pd.read_csv(filepath)
@@ -173,6 +222,7 @@ def detect_and_correct_failures(df, measurement_columns, negative_variables):
     return df, detected_failures
 
 @app.route('/download/<filename>')
+@login_required
 def download_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
 

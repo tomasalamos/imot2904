@@ -4,13 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>{{ title or "Data Processing Platform" }}</title>
+  {% block head %}{% endblock %}
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
       background-color: #111;
       color: #fff;
       margin: 0;
-      padding: 4rem 4rem 4rem 4rem;
+      padding: 4rem;
       font-weight: 300;
       font-size: 16px;
     }
@@ -120,6 +121,17 @@
       color: #ccc;
     }
 
+    .flash {
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    .flash-success { background-color: #28a745; color: white; }
+    .flash-error   { background-color: #dc3545; color: white; }
+    .flash-warning { background-color: #f0ad4e; color: black; }
+
     footer {
       margin-top: 3rem;
       font-size: 0.9rem;
@@ -131,11 +143,24 @@
   <header>
     <h1>{{ title or "Data Processing Platform" }}</h1>
   </header>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <section>
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      </section>
+    {% endif %}
+  {% endwith %}
+
   <main>
     {% block content %}{% endblock %}
   </main>
+
   <footer>
     Data processing platform for automatic detection and correction of errors.
   </footer>
 </body>
 </html>
+
