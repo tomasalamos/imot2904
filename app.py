@@ -5,11 +5,13 @@ from flask import Flask, render_template, request, redirect, url_for, send_from_
 import pandas as pd
 import numpy as np
 from datetime import datetime
+from functools import wraps
 
 warnings.filterwarnings('ignore')
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey123'  # Cambiar por una clave segura
+
 
 UPLOAD_FOLDER = 'upload'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -22,38 +24,43 @@ if not os.path.exists(UPLOAD_FOLDER):
 # ========================
 
 USERS = {
-    'admin': 'admin123',  # Usuario de ejemplo
+    'admin': 'admin123',
     'usuario': 'clave123'
 }
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
+@app.route('/auth', methods=['GET', 'POST'])
+def auth():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        if username == 'admin' and password == 'admin':
-            session['logged_in'] = True
-            return redirect(url_for('index'))
-        else:
-            return 'Usuario o contraseña incorrectos', 401
-    return render_template('login.html')
+        action = request.form['action']
 
+        if action == 'login':
+            if USERS.get(username) == password:
+                session['user'] = username
+                return redirect(url_for('index'))
+            else:
+                flash('Usuario o contraseña incorrectos', 'danger')
+        elif action == 'register':
+            if username in USERS:
+                flash('El usuario ya existe', 'warning')
+            else:
+                USERS[username] = password
+                flash('Usuario registrado con éxito. Ahora puedes iniciar sesión.', 'success')
+    return render_template('auth.html')
 
 @app.route('/logout')
 def logout():
     session.pop('user', None)
     flash('Has cerrado sesión', 'info')
-    return redirect(url_for('login'))
-
-# Decorador para proteger rutas
-from functools import wraps
+    return redirect(url_for('auth'))
 
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user' not in session:
             flash('Debes iniciar sesión para acceder.', 'warning')
-            return redirect(url_for('login'))
+            return redirect(url_for('auth'))
         return f(*args, **kwargs)
     return decorated_function
 
