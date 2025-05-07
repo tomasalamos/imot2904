@@ -1,5 +1,4 @@
 import os
-import pickle
 import warnings
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory, session, flash
 import pandas as pd
@@ -22,17 +21,22 @@ if not os.path.exists(UPLOAD_FOLDER):
 # Login and authentication
 # ========================
 
-USERS_FILE = 'users.pkl'
+USERS_FILE = 'users.txt'
 
 def load_users():
+    users = {}
     if os.path.exists(USERS_FILE):
-        with open(USERS_FILE, 'rb') as f:
-            return pickle.load(f)
-    return {}
+        with open(USERS_FILE, 'r') as f:
+            for line in f:
+                if line.strip():  # Skip empty lines
+                    username, password = line.strip().split(':')
+                    users[username] = password
+    return users
 
 def save_users(users):
-    with open(USERS_FILE, 'wb') as f:
-        pickle.dump(users, f)
+    with open(USERS_FILE, 'w') as f:
+        for username, password in users.items():
+            f.write(f"{username}:{password}\n")
 
 @app.route('/auth', methods=['GET', 'POST'])
 def auth():
@@ -86,21 +90,49 @@ def index():
 @app.route('/form', methods=['POST'])
 @login_required
 def form():
+    if 'file' not in request.files:
+        flash('No file selected', 'error')
+        return redirect(url_for('index'))
+        
     file = request.files['file']
     if file.filename == '':
+        flash('No file selected', 'error')
         return redirect(url_for('index'))
 
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'data.csv')
-    file.save(filepath)
+    if not file.filename.endswith('.csv'):
+        flash('Please upload a CSV file', 'error')
+        return redirect(url_for('index'))
 
-    df = pd.read_csv(filepath)
-    df['date'] = pd.to_datetime(df['date'], errors='coerce')
-    df = df.dropna(subset=['date'])
-    numeric_columns = df.select_dtypes(include=['float64', 'int64']).columns.tolist()
-    min_date = df['date'].min().strftime('%Y-%m-%dT%H:%M:%S')
-    max_date = df['date'].max().strftime('%Y-%m-%dT%H:%M:%S')
+    try:
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'data.csv')
+        file.save(filepath)
 
-    return render_template('form.html', variables=numeric_columns, min_date=min_date, max_date=max_date)
+        df = pd.read_csv(filepath)
+        if 'date' not in df.columns:
+            flash('CSV file must contain a "date" column', 'error')
+            return redirect(url_for('index'))
+
+        df['date'] = pd.to_datetime(df['date'], errors='coerce')
+        df = df.dropna(subset=['date'])
+        
+        if len(df) == 0:
+            flash('No valid data found in the CSV file', 'error')
+            return redirect(url_for('index'))
+
+        numeric_columns = df.select_dtypes(include=['float64', 'int64']).columns.tolist()
+        if not numeric_columns:
+            flash('No numeric columns found in the CSV file', 'error')
+            return redirect(url_for('index'))
+
+        min_date = df['date'].min().strftime('%Y-%m-%dT%H:%M:%S')
+        max_date = df['date'].max().strftime('%Y-%m-%dT%H:%M:%S')
+
+        flash('File uploaded successfully', 'success')
+        return render_template('form.html', variables=numeric_columns, min_date=min_date, max_date=max_date)
+
+    except Exception as e:
+        flash(f'Error processing file: {str(e)}', 'error')
+        return redirect(url_for('index'))
 
 @app.route('/process', methods=['POST'])
 @login_required
@@ -120,8 +152,10 @@ def process():
     df_to_save_copy['date'] = df_to_save_copy['date'].dt.strftime('%Y-%m-%d %H:%M:%S')
     df_to_save_copy.to_csv(os.path.join(app.config['UPLOAD_FOLDER'], 'filtered_data.csv'), index=False)
 
-    with open(os.path.join(app.config['UPLOAD_FOLDER'], 'negative_variables.pkl'), 'wb') as f:
-        pickle.dump(negative_vars, f)
+    # Save negative variables to text file
+    with open(os.path.join(app.config['UPLOAD_FOLDER'], 'negative_variables.txt'), 'w') as f:
+        for var in negative_vars:
+            f.write(f"{var}\n")
 
     complete_data, missing_dates = complete_missing_data(df_to_save, selected_vars)
     complete_data['date'] = pd.to_datetime(complete_data['date']).dt.strftime('%Y-%m-%d %H:%M:%S')

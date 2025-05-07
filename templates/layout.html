@@ -20,12 +20,27 @@
       padding: 1rem 0;
       border-bottom: 1px solid #444;
       margin-bottom: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     h1 {
       font-size: 2rem;
       margin: 0;
       font-weight: 500;
+      color: #FFC44D;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .user-info {
+      color: #FFC44D;
+      margin-right: 1rem;
     }
 
     section {
@@ -66,8 +81,8 @@
     .button-blue { background-color: #0b66b5; color: white; }
     .button-blue:hover { background-color: #206497; }
 
-    .button-yellow { background-color: #f5a623; color: #000; }
-    .button-yellow:hover { background-color: #d48806; }
+    .button-yellow { background-color: #FFC44D; color: #000; }
+    .button-yellow:hover { background-color: #FFB82E; }
 
     .button-purple { background-color: #6f42c1; color: white; }
     .button-purple:hover { background-color: #5936a2; }
@@ -142,6 +157,12 @@
 <body>
   <header>
     <h1>{{ title or "Data Processing Platform" }}</h1>
+    <div class="header-right">
+      {% if session.get('user') %}
+        <span class="user-info">Welcome, {{ session.get('user') }}</span>
+        <a href="{{ url_for('logout') }}" class="button button-yellow">Logout</a>
+      {% endif %}
+    </div>
   </header>
 
   {% with messages = get_flashed_messages(with_categories=true) %}

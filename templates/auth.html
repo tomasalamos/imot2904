@@ -14,7 +14,7 @@
     .auth-container h3 {
         text-align: center;
         margin-bottom: 2rem;
-        color: #fff;
+        color: #FFC44D;
     }
 
     .auth-container .form-label {
@@ -25,12 +25,56 @@
     .auth-container input {
         width: 100%;
         margin-bottom: 1rem;
+        background-color: #333;
+        border: 1px solid #444;
+        color: #fff;
+        padding: 0.8rem;
+        border-radius: 4px;
+    }
+
+    .auth-container input:focus {
+        outline: none;
+        border-color: #FFC44D;
+        box-shadow: 0 0 5px rgba(255, 196, 77, 0.3);
     }
 
     .auth-container .button-group {
         display: flex;
         flex-direction: column;
         gap: 1rem;
+    }
+
+    .tabs {
+        display: flex;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid #444;
+    }
+
+    .tab {
+        flex: 1;
+        padding: 1rem;
+        text-align: center;
+        color: #fff;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.3s ease;
+    }
+
+    .tab:hover {
+        color: #FFC44D;
+    }
+
+    .tab.active {
+        border-bottom: 2px solid #FFC44D;
+        color: #FFC44D;
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
     }
 </style>
 {% endblock %}
@@ -39,28 +83,80 @@
 <div class="auth-container">
     <h3>Welcome</h3>
 
-    <form method="POST" id="authForm" action="{{ url_for('auth') }}">
-        <div>
-            <label for="username" class="form-label">Username</label>
-            <input type="text" id="username" name="username" required>
-        </div>
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('login')">Login</div>
+        <div class="tab" onclick="switchTab('register')">Register</div>
+    </div>
 
-        <div>
-            <label for="password" class="form-label">Password</label>
-            <input type="password" id="password" name="password" required>
-        </div>
+    <div id="login-form" class="tab-content active">
+        <form method="POST" id="loginForm" action="{{ url_for('auth') }}">
+            <input type="hidden" name="action" value="login">
+            <div>
+                <label for="login-username" class="form-label">Username (name-company)</label>
+                <input type="text" id="login-username" name="username" placeholder="example: tomas-imot" required>
+            </div>
 
-        <div class="button-group">
-            <button type="submit" name="action" value="login" class="button button-blue">Log In</button>
-            <button type="submit" name="action" value="register" class="button button-gray">Register</button>
-        </div>
-    </form>
+            <div>
+                <label for="login-password" class="form-label">Password</label>
+                <input type="password" id="login-password" name="password" required>
+            </div>
+
+            <div class="button-group">
+                <button type="submit" class="button button-yellow">Log In</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="register-form" class="tab-content">
+        <form method="POST" id="registerForm" action="{{ url_for('auth') }}">
+            <input type="hidden" name="action" value="register">
+            <div>
+                <label for="register-username" class="form-label">Username (name-company)</label>
+                <input type="text" id="register-username" name="username" placeholder="ej: juan-elecmetal" required>
+            </div>
+
+            <div>
+                <label for="register-password" class="form-label">Password</label>
+                <input type="password" id="register-password" name="password" required>
+            </div>
+
+            <div class="button-group">
+                <button type="submit" class="button button-yellow">Register</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <script>
-    document.getElementById('authForm').addEventListener('submit', function(e) {
-        const username = document.getElementById('username').value.trim();
-        const password = document.getElementById('password').value.trim();
+    function switchTab(tabName) {
+        // Update tabs
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
+
+        // Update forms
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(`${tabName}-form`).classList.add('active');
+    }
+
+    // Form validation
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        const username = document.getElementById('login-username').value.trim();
+        const password = document.getElementById('login-password').value.trim();
+        
+        if (!username || !password) {
+            e.preventDefault();
+            alert('Please fill in all fields');
+            return;
+        }
+    });
+
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
+        const username = document.getElementById('register-username').value.trim();
+        const password = document.getElementById('register-password').value.trim();
         
         if (!username || !password) {
             e.preventDefault();
