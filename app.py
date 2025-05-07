@@ -10,8 +10,7 @@ from functools import wraps
 warnings.filterwarnings('ignore')
 
 app = Flask(__name__)
-app.secret_key = 'supersecretkey123'  # Cambiar por una clave segura
-
+app.secret_key = 'supersecretkey123'  # Change to a secure key
 
 UPLOAD_FOLDER = 'upload'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -20,52 +19,64 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 # ========================
-# Login y autenticación
+# Login and authentication
 # ========================
 
-USERS = {
-    'admin': 'admin123',
-    'usuario': 'clave123'
-}
+USERS_FILE = 'users.pkl'
+
+def load_users():
+    if os.path.exists(USERS_FILE):
+        with open(USERS_FILE, 'rb') as f:
+            return pickle.load(f)
+    return {}
+
+def save_users(users):
+    with open(USERS_FILE, 'wb') as f:
+        pickle.dump(users, f)
 
 @app.route('/auth', methods=['GET', 'POST'])
 def auth():
+    users = load_users()
+
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
         action = request.form['action']
 
         if action == 'login':
-            if USERS.get(username) == password:
+            if users.get(username) == password:
                 session['user'] = username
                 return redirect(url_for('index'))
             else:
-                flash('Usuario o contraseña incorrectos', 'danger')
+                flash('Incorrect username or password', 'danger')
+
         elif action == 'register':
-            if username in USERS:
-                flash('El usuario ya existe', 'warning')
+            if username in users:
+                flash('User already exists', 'warning')
             else:
-                USERS[username] = password
-                flash('Usuario registrado con éxito. Ahora puedes iniciar sesión.', 'success')
+                users[username] = password
+                save_users(users)
+                flash('User registered successfully. You can now log in.', 'success')
+
     return render_template('auth.html')
 
 @app.route('/logout')
 def logout():
     session.pop('user', None)
-    flash('Has cerrado sesión', 'info')
+    flash('You have logged out', 'info')
     return redirect(url_for('auth'))
 
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user' not in session:
-            flash('Debes iniciar sesión para acceder.', 'warning')
+            flash('You must log in to access.', 'warning')
             return redirect(url_for('auth'))
         return f(*args, **kwargs)
     return decorated_function
 
 # ========================
-# Rutas protegidas
+# Protected routes
 # ========================
 
 @app.route('/')
@@ -235,3 +246,4 @@ def download_file(filename):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
+
